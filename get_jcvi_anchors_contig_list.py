@@ -1,8 +1,13 @@
+#!/usr/bin/env python
 import os,sys
 
-bed_file = './longstitch_v3_A.bed'
-anchors_file = './longstitch_v3_A.longstitch_v3_B.anchors'
-contig_length = './A.length.txt'
+# bed_file = './longstitch_v3_A.bed'
+# anchors_file = './longstitch_v3_A.longstitch_v3_B.anchors'
+# contig_length = './A.length.txt'
+bed_file = sys.argv[1]
+anchors_file = sys.argv[2]
+contig_length = sys.argv[3]
+
 
 def get_bed_dict(bed_file):
     global bed_dict
