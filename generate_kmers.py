@@ -1,29 +1,49 @@
 #!/usr/bin/env python
 import argparse
-import re
-from Bio import SeqIO
-# this code was changed based on biostar "https://www.biostars.org/p/152592/"
-def count_chromosome_gaps(input_file, output_file):
-    # Open input FASTA file, search for masked regions, print in GFF3 format
-    with open(input_file) as handle:
-        i = 0
-        for record in SeqIO.parse(handle, "fasta"):
-            for match in re.finditer('N+', str(record.seq)):
-                i = i + 1
-                output_file.write(record.id + "\t.\tgap\t" + str(match.start() + 1) + "\t" + str(match.end()) + "\t.\t.\t.\tName=gap" + str(i) + ";size=" + str(match.end() - match.start()) + "\n")
 
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description='Count chromosome gaps in a FASTA file and save the result in GFF3 format.')
-parser.add_argument("-i", "--input", required=True, help="Input FASTA file")
-parser.add_argument("-o", "--output", required=True, help="Output GFF3 file")
+def read_fasta(filename):
+    sequences = []
+    with open(filename, "r") as file:
+        seq = ""
+        for line in file:
+            line = line.strip()
+            if line.startswith(">"):
+                if seq:
+                    sequences.append((name, seq))
+                name = line[1:]
+                seq = ""
+            else:
+                seq += line
+        if seq:
+            sequences.append((name, seq))
+    return sequences
+
+def generate_kmer(name, sequence, k):
+    kmer_list = []
+    for i in range(len(sequence) - k + 1):
+        kmer_list.append(f">{name}__{i+1}\n{sequence[i:i+k]}")
+    return kmer_list
+
+# 参数解析
+parser = argparse.ArgumentParser(description="Generate kmer sequences from FASTA file")
+parser.add_argument("-i", "--input", help="input FASTA file")
+parser.add_argument("-k", "--kmer", type=int, default=150, help="kmer length (default: 150)")
 args = parser.parse_args()
 
-# Check if input and output file paths are provided
-if args.input is None or args.output is None:
-    parser.print_usage()
+if not args.input:
+    parser.print_help()
     exit()
 
-# Open output GFF3 file
-with open(args.output, 'w') as output:
-    # Call count_chromosome_gaps() function to count gaps and write to output file
-    count_chromosome_gaps(args.input, output)
+input_file = args.input
+output_file = "split_150bp.fa"
+k = args.kmer
+
+sequences = read_fasta(input_file)
+with open(output_file, "w") as file:
+    for name, sequence in sequences:
+        kmers = generate_kmer(name, sequence, k)
+        for kmer in kmers:
+            file.write(kmer + "\n")
+        file.write("\n")
+
+print("Kmer sequences have been generated and saved to", output_file)
